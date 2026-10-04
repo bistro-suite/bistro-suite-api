@@ -140,6 +140,49 @@ class PublicOrderTest extends TestCase
             ->assertStatus(409);
     }
 
+    public function test_read_only_demo_blocks_admin_changes_while_preserving_read_access(): void
+    {
+        [$bistro, $product] = $this->catalog();
+        $admin = User::create([
+            'bistro_id' => $bistro->id,
+            'name' => 'Admin demo',
+            'email' => 'demo@example.test',
+            'password' => 'password-test',
+            'is_active' => true,
+        ]);
+        $order = $bistro->orders()->create([
+            'reference' => 'BS-DEMO0001',
+            'idempotency_key' => 'b8c0bd7a-507e-45c6-bc7c-5df02e90f313',
+            'status' => Order::STATUS_PENDING,
+            'fulfillment_method' => 'pickup',
+            'customer_name' => 'Cliente de prueba',
+            'customer_phone' => '3001234567',
+            'subtotal_cop' => 12000,
+            'delivery_fee_cop' => 0,
+            'total_cop' => 12000,
+            'pickup_address' => 'Dirección de muestra, Cúcuta',
+        ]);
+
+        config(['app.admin_demo_read_only' => true]);
+        $this->actingAs($admin, 'sanctum');
+
+        $this->getJson('/api/v1/admin/products')->assertOk();
+        $this->postJson('/api/v1/admin/products', [
+            'name' => 'Nuevo plato', 'category' => 'Prueba', 'price_cop' => 10000, 'available' => true,
+        ])->assertForbidden()->assertJsonPath('code', 'DEMO_READ_ONLY');
+        $this->putJson("/api/v1/admin/products/{$product->id}", [
+            'name' => 'Nombre cambiado', 'category' => 'Prueba', 'price_cop' => 1, 'available' => false,
+        ])->assertForbidden();
+        $this->deleteJson("/api/v1/admin/products/{$product->id}")->assertForbidden();
+        $this->patchJson('/api/v1/admin/settings', ['delivery_fee_cop' => 0])->assertForbidden();
+        $this->patchJson("/api/v1/admin/orders/{$order->id}/status", ['status' => 'confirmed'])->assertForbidden();
+
+        $this->assertSame(1, $bistro->products()->count());
+        $this->assertSame('Pastel de prueba', $product->fresh()->name);
+        $this->assertSame(5000, $bistro->fresh()->delivery_fee_cop);
+        $this->assertSame(Order::STATUS_PENDING, $order->fresh()->status);
+    }
+
     /** @return array{Bistro, Product} */
     private function catalog(): array
     {

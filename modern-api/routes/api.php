@@ -22,13 +22,13 @@ Route::prefix('v1')->group(function (): void {
 
     Route::prefix('admin')->middleware('auth:sanctum')->group(function (): void {
         Route::get('/settings', [BistroSettingsController::class, 'show']);
-        Route::patch('/settings', [BistroSettingsController::class, 'update']);
+        Route::patch('/settings', [BistroSettingsController::class, 'update'])->middleware('admin.demo_read_only');
         Route::get('/orders', [OrderController::class, 'index']);
-        Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus']);
+        Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->middleware('admin.demo_read_only');
         Route::get('/products', [ProductController::class, 'index']);
-        Route::post('/products', [ProductController::class, 'store']);
-        Route::put('/products/{product}', [ProductController::class, 'update']);
-        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
-        Route::post('/products/{product}/image', [ProductController::class, 'uploadImage']);
+        Route::post('/products', [ProductController::class, 'store'])->middleware('admin.demo_read_only');
+        Route::put('/products/{product}', [ProductController::class, 'update'])->middleware('admin.demo_read_only');
+        Route::delete('/products/{product}', [ProductController::class, 'destroy'])->middleware('admin.demo_read_only');
+        Route::post('/products/{product}/image', [ProductController::class, 'uploadImage'])->middleware('admin.demo_read_only');
     });
 });
