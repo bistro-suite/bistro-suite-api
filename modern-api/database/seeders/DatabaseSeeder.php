@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Bistro;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -55,6 +56,77 @@ class DatabaseSeeder extends Seeder
                 'price_cop' => $price, 'available' => $available, 'image_url' => $image,
                 'illustration' => $illustration, 'tag' => $tag, 'display_order' => $order + 1,
             ]);
+        }
+
+        if ($bistro->is_demo) {
+            $this->seedDemoOrders($bistro);
+        }
+    }
+
+    private function seedDemoOrders(Bistro $bistro): void
+    {
+        $catalog = $bistro->products()->get()->keyBy('slug');
+        $samples = [
+            ['BS-DEMO0001', 'pending', 'delivery', 'Valentina Demo', '3000000001', 'valentina@example.test', 'Centro', 'Dirección ficticia · Centro', 2, [['pastel-garbanzo', 2, 'Sin picante'], ['limonada-casa', 1, null]]],
+            ['BS-DEMO0002', 'pending', 'pickup', 'Mateo Prueba', '3000000002', 'mateo@example.test', null, null, 5, [['hayaca-cucutena', 2, null], ['cafe-origen', 2, 'Una sin azúcar']]],
+            ['BS-DEMO0003', 'pending', 'delivery', 'Sara Muestra', '3000000003', null, 'Caobos', 'Dirección ficticia · Caobos', 9, [['mute-santandereano', 1, null], ['masato-cucuteno', 2, null]]],
+            ['BS-DEMO0004', 'confirmed', 'delivery', 'Nicolás Ejemplo', '3000000004', 'nicolas@example.test', 'La Riviera', 'Dirección ficticia · La Riviera', 26, [['cabrito-nortesantandereano', 1, 'Arepa aparte'], ['soda-frutos-rojos', 2, null]]],
+            ['BS-DEMO0005', 'confirmed', 'pickup', 'Laura Demo', '3000000005', 'laura@example.test', null, null, 31, [['pasta-huerta', 1, 'Sin queso'], ['cheesecake-guayaba', 1, null]]],
+            ['BS-DEMO0006', 'delivered', 'delivery', 'Samuel Prueba', '3000000006', null, 'Centro', 'Dirección ficticia · Centro', 52, [['pollo-horno', 2, null], ['limonada-casa', 2, null]]],
+            ['BS-DEMO0007', 'delivered', 'pickup', 'Isabela Muestra', '3000000007', 'isabela@example.test', null, null, 78, [['trucha-plancha', 1, null], ['flan-vainilla', 2, null]]],
+            ['BS-DEMO0008', 'cancelled', 'delivery', 'Tomás Ejemplo', '3000000008', null, 'Caobos', 'Dirección ficticia · Caobos', 106, [['bowl-criollo', 1, null], ['soda-frutos-rojos', 1, 'Sin hielo']]],
+        ];
+
+        foreach ($samples as [$reference, $status, $method, $name, $phone, $email, $neighborhood, $address, $ageHours, $lines]) {
+            $items = [];
+            $subtotal = 0;
+            foreach ($lines as [$slug, $quantity, $note]) {
+                $product = $catalog->get($slug);
+                if ($product === null) {
+                    continue;
+                }
+                $lineTotal = $product->price_cop * $quantity;
+                $subtotal += $lineTotal;
+                $items[] = [
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'unit_price_cop' => $product->price_cop,
+                    'quantity' => $quantity,
+                    'note' => $note,
+                    'line_total_cop' => $lineTotal,
+                ];
+            }
+
+            if ($items === []) {
+                continue;
+            }
+
+            $createdAt = now()->subHours($ageHours);
+            $deliveryFee = $method === 'delivery' ? $bistro->delivery_fee_cop : 0;
+            $order = $bistro->orders()->firstOrCreate(
+                ['reference' => $reference],
+                [
+                    'idempotency_key' => sprintf('00000000-0000-4000-8000-%012d', (int) substr($reference, -4)),
+                    'status' => $status,
+                    'fulfillment_method' => $method,
+                    'customer_name' => $name,
+                    'customer_phone' => $phone,
+                    'customer_email' => $email,
+                    'neighborhood' => $neighborhood,
+                    'delivery_address' => $address,
+                    'pickup_address' => $method === 'pickup' ? $bistro->pickup_address : null,
+                    'subtotal_cop' => $subtotal,
+                    'delivery_fee_cop' => $deliveryFee,
+                    'total_cop' => $subtotal + $deliveryFee,
+                ],
+            );
+
+            if ($order->wasRecentlyCreated) {
+                $order->forceFill(['created_at' => $createdAt, 'updated_at' => $createdAt]);
+                $order->timestamps = false;
+                $order->save();
+                $order->items()->createMany($items);
+            }
         }
     }
 }
