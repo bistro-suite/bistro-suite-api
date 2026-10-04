@@ -2,7 +2,7 @@
 builder = "RAILPACK"
 
 [deploy]
-preDeployCommand = ["php artisan migrate --force"]
+preDeployCommand = ["php artisan migrate --force", "php artisan db:seed --force"]
 startCommand = "sh -lc 'php artisan storage:link --force && printf \"Starting Laravel on port %s\\n\" \"${PORT:-8080}\" && exec php artisan serve --host=0.0.0.0 --port=\"${PORT:-8080}\"'"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
