@@ -6,3 +6,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev unzip
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /workspace
+
+COPY . .
+
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+CMD ["sh", "-lc", "php artisan storage:link --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
