@@ -22,6 +22,17 @@ The Compose database and API bind only to localhost. Its credentials and seeded 
 
 The public checkout accepts guest orders with name and phone, optional email, product quantities and item notes, plus delivery or pickup. The authenticated admin changes fulfillment settings at `/admin`: enable either method, set one flat delivery fee in COP, manage up to 100 neighborhood names, and set the pickup address. Delivery orders require a configured neighborhood and address; the API matches neighborhood names case-insensitively and stores the configured spelling. Pickup orders snapshot the configured pickup address. Laravel rechecks each item against the selected bistro's available catalog and stores product name and price snapshots; clients cannot set prices or totals. Each attempt uses a UUID persisted with the current tab's cart and protected by a per-bistro unique database constraint. Repeating the same request returns its existing confirmation, including when concurrent requests race. The order total is product subtotal plus the delivery fee when applicable. The seeded zones, $5,000 COP fee and pickup address are fictional demo settings, not real coverage information. Payment and tax calculation are not configured. Public order creation is rate-limited, and its response reveals only the reference, status, fulfillment method and total.
 
+## API feature tests
+
+The Laravel feature suite runs against a dedicated PostgreSQL database so `RefreshDatabase` never migrates or clears the local demo database:
+
+```sh
+docker-compose exec db createdb -U bistro bistro_suite_test
+docker-compose exec -T -e APP_ENV=testing -e DB_URL= -e DB_DATABASE=bistro_suite_test api composer test
+```
+
+Create `bistro_suite_test` once. The suite verifies delivery and pickup totals, server-side price snapshots, idempotent retries, invalid coverage and unavailable products, and authenticated order status transitions. Keep `DB_DATABASE=bistro_suite_test`: the test framework migrates this database from scratch. Never point the test command at a production database.
+
 ## Railway
 
 The live Railway service uses this directory as its root (`/modern-api`) and follows the backend layout in `gestion-monitorias/backend/railway.toml`, adapted to Laravel and Railpack. On each deployment, `railway-pre-deploy.sh` runs migrations and seeds the fictional menu and demo administrator before the app starts. The start command creates the public storage link and listens on Railway's `PORT`; `/health` is the service health check. The API is private and receives browser requests through the web service's proxy.
