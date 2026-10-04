@@ -1,10 +1,5 @@
-### Cars admin API
+# Bistro Suite API
 
-[Web Client in this link](https://github.com/cars-admin/cars-admin-client)
+This repository contains the Laravel API for [Bistro Suite](https://bistro-web-production.up.railway.app/). The previous Cars Admin implementation and its historical screen map remain in this repository for reference; the current product UI lives in the [Bistro Suite web repository](https://github.com/bistro-suite/bistro-suite-web).
 
-#### Admin section
-![Image of cars admin section](./cars-admin.png)
-
-
-#### Public section
-![Image of cars admin section](./cars-public.png)
+See the main [README](README.md) for the local Docker setup and the [modern API guide](modern-api/README.md) for API and Railway details. Historical screenshots are intentionally omitted here so they are not mistaken for the current interface.

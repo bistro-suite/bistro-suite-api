@@ -1,12 +1,14 @@
-# Bistro Suite API foundation
+# Bistro Suite API
 
-Clean Laravel API skeleton, separate from the legacy application at the repository root. The legacy code and planning documents remain untouched.
+Laravel API for the Bistro Suite demo, deployed at Railway and kept separate from the historical application at the repository root. The legacy code and planning documents remain available as business-flow references.
+
+**Live demo:** [bistro-web-production.up.railway.app](https://bistro-web-production.up.railway.app/). The public menu API is available through the web service's same-origin proxy at [`/api/v1/public/bistros/demo-bistro/menu`](https://bistro-web-production.up.railway.app/api/v1/public/bistros/demo-bistro/menu). The API itself stays private inside Railway.
 
 ## Local demo stack
 
 The Compose stack runs Laravel with PostgreSQL and the Mithril/Vite client. Docker Compose starts PostgreSQL, waits for it from the API container, applies migrations, and seeds a fictional bistro menu.
 
-From `cars-admin-api/`:
+From the API repository root:
 
 ```sh
 docker-compose up --build -d
@@ -14,7 +16,7 @@ docker-compose up --build -d
 
 Open the storefront at `http://localhost:5173`; the API health check is `http://localhost:8000/health`. The public route is `GET /api/v1/public/bistros/{slug}/menu`. For example, `demo-bistro` returns the seeded menu. Every product query is scoped through the resolved bistro; inactive bistros return 404, and unavailable products are excluded.
 
-The seed provides 16 available fictional products in five categories, plus one unavailable product used to verify filtering. Six entries feature Nortesantanderean dishes and locally generated illustrative menu photos. Names, descriptions, prices, categories, tags, and illustrations are demonstration content, not imported business records. See `cars-admin-client/modern-web/ASSET_PROVENANCE.md` for asset provenance. Seed uses `firstOrCreate`, so subsequent starts preserve edits to existing demo products; the one-time migration that curates the existing demo menu runs before seeding.
+The seed provides 16 available fictional products in five categories, plus one unavailable product used to verify filtering. Six entries feature Nortesantanderean dishes and locally generated illustrative menu photos. Names, descriptions, prices, categories, tags, and illustrations are demonstration content, not imported business records. See the [asset provenance notes](https://github.com/bistro-suite/bistro-suite-web/blob/main/modern-web/ASSET_PROVENANCE.md). Seed uses `firstOrCreate`, so subsequent starts preserve edits to existing demo products; the one-time migration that curates the existing demo menu runs before seeding.
 
 The Compose database and API bind only to localhost. Its credentials and seeded admin account are for local demo use and must not be reused in production. Open `http://localhost:5173/admin` and sign in with `admin@demo-bistro.local` / `BistroDemo-Local-2026!`. The local seeder creates this account only when both `DEMO_ADMIN_EMAIL` and `DEMO_ADMIN_PASSWORD` are set; production uses a different generated password. The panel can list, create, edit, mark available/unavailable, upload an image (5 MB maximum), and delete products. It also shows the 50 most recent orders, refreshes every minute, and permits only pending → confirmed/cancelled and confirmed → delivered/cancelled transitions. Every admin query is scoped to the signed-in user's bistro. Login uses Laravel Sanctum's stateful session and CSRF cookie flow. On Railway, the web service reverse-proxies API requests through the private network so the browser stays on one origin and the API needs no public domain.
 
@@ -22,6 +24,8 @@ The public checkout accepts guest orders with name and phone, optional email, pr
 
 ## Railway
 
-This directory is intended as the Railway service root. It follows the separate backend service layout in `gestion-monitorias/backend/railway.toml`, adapted to current Railpack and Laravel: `railway-pre-deploy.sh` runs migrations and idempotently seeds the demo menu and administrator before the server starts. The start command creates the public storage symlink and listens on `PORT` for private traffic from the web service. Configure the API service root directory as `/modern-api` and attach a persistent volume at `/data`; set `APP_PUBLIC_STORAGE_PATH=/data` so product image uploads survive deploys. Connect `DB_URL` to the Railway Postgres service, set production `APP_KEY`, `APP_ENV=production`, and `APP_DEBUG=false`, and provide a unique strong `DEMO_ADMIN_PASSWORD` for the demo administrator. Remove that one-time password variable after confirming the initial seed; if the demo database is reset, add a new password before redeploying to recreate the account.
+The live Railway service uses this directory as its root (`/modern-api`) and follows the backend layout in `gestion-monitorias/backend/railway.toml`, adapted to Laravel and Railpack. On each deployment, `railway-pre-deploy.sh` runs migrations and seeds the fictional menu and demo administrator before the app starts. The start command creates the public storage link and listens on Railway's `PORT`; `/health` is the service health check. The API is private and receives browser requests through the web service's proxy.
 
-Railway has announced that its legacy config-as-code files will stop applying to new deployments after 2026-12-01. Before production deployment, migrate these settings to Railway Infrastructure as Code or configure them in the service settings and remove this file. The health check and service root are the settings to preserve.
+The production service connects to Railway Postgres through `DB_URL`, mounts a persistent volume at `/data`, and stores uploaded menu images there using `APP_PUBLIC_STORAGE_PATH=/data`. Production uses its own `APP_KEY` and a generated `DEMO_ADMIN_PASSWORD`; neither is committed here. The admin account is for the demo only. If the database is recreated, set a new strong password before deployment so the idempotent seeder can create the account again.
+
+The `railway.toml` is the checked-in service configuration. Keep its root directory, pre-deploy command, start command and health check aligned with the Railway service settings. Railway documents pre-deploy commands as running in a separate container with access to environment variables and private networking; do not make that command depend on mounted-volume files. See [Railway pre-deploy command docs](https://docs.railway.com/deployments/pre-deploy-command) and [config-as-code reference](https://docs.railway.com/config-as-code/reference).

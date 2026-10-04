@@ -1,6 +1,8 @@
 # Bistro Suite
 
-Bistro Suite moderniza la antigua aplicación Cars Admin para ofrecer una plataforma de administración y pedidos para bistrós. Este repositorio conserva la aplicación anterior y sus documentos; el nuevo API Laravel vive en `modern-api/`. El cliente Mithril está en el repositorio hermano `cars-admin-client/modern-web/`.
+Bistro Suite moderniza la antigua aplicación Cars Admin para ofrecer una plataforma de administración y pedidos para bistrós. Este repositorio conserva la aplicación anterior y sus documentos; el API Laravel vive en `modern-api/`. El cliente Mithril vive en el [repositorio web de Bistro Suite](https://github.com/bistro-suite/bistro-suite-web/tree/main/modern-web).
+
+**Demo pública:** [bistro-web-production.up.railway.app](https://bistro-web-production.up.railway.app/). La carta pública, el panel y el API se despliegan desde la rama `main` en servicios separados de Railway. El API no tiene dominio público: la web reenvía `/api`, `/sanctum` y `/storage` por la red privada. No se publican aquí las credenciales del panel demo.
 
 ## Stack actual
 
@@ -96,13 +98,13 @@ Para retirarlos junto con la red del proyecto, desde la raíz del API ejecuta `d
 
 - `compose.yaml`: entorno Docker local para API y web.
 - `DOCKER_LOCAL.md`: referencia breve al flujo de desarrollo local.
-- `modern-api/README.md`: API Laravel y su configuración prevista para Railway.
-- `../cars-admin-client/modern-web/README.md`: cliente Mithril y scripts de desarrollo.
-- `../cars-admin-client/modern-web/ASSET_PROVENANCE.md`: assets visuales recuperados del sistema anterior y su procedencia.
+- `modern-api/README.md`: API Laravel, configuración local y despliegue Railway.
+- [README del cliente web](https://github.com/bistro-suite/bistro-suite-web/blob/main/modern-web/README.md): cliente Mithril, demo pública y scripts de desarrollo.
+- [Procedencia de assets](https://github.com/bistro-suite/bistro-suite-web/blob/main/modern-web/ASSET_PROVENANCE.md): recursos visuales recuperados del sistema anterior.
 - `API_DOMAIN_DRAFT.md`: evidencia del dominio heredado y contrato inicial del menú.
 - `PRODUCT_SPEC.md`, `MVP_BLUEPRINT.md` y documentos `WIREFRAME_*`: definición y diseño del producto.
 
-Railway no usa este Compose: API, cliente y Postgres se configuran como servicios independientes. El API solo acepta tráfico desde la red privada; la web pública reenvía `/api`, `/sanctum` y `/storage` al API. Las imágenes subidas al panel se guardan en un volumen persistente.
+Railway no usa este Compose: API, cliente y Postgres se configuran como servicios independientes. El API solo acepta tráfico desde la red privada; la web pública reenvía `/api`, `/sanctum` y `/storage` al API. Las imágenes subidas al panel se guardan en un volumen persistente. El endpoint público de la carta demo devuelve 16 platos en cinco categorías.
 # Bistro Suite API
 
 The modernization API lives in [`modern-api/`](modern-api/README.md). Its local Compose setup provides PostgreSQL persistence and a bistro-scoped, fictional sample menu for the demo client. Legacy API files and historical docs in this repository remain available for reference.
